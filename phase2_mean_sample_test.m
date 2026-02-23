@@ -40,8 +40,6 @@ idxBad = (h_ttest);
 Status = repmat("OK", N, 1);
 Status(idxBad) = "OUT-OF-SPEC";
 
-results = table(Arm, nStart, nEnd, meanStart, meanEnd, p_ttest, h_ttest, Status);
-
 for k = 1:N
     fprintf('Arm %3d: n(start)=%3d n(end)=%3d mean(start)=%.4g mean(end)=%.4g | t p=%.4g h=%d --> %s\n', ...
         Arm(k), nStart(k), nEnd(k), meanStart(k), meanEnd(k), p_ttest(k), h_ttest(k), char(Status(k)));
