@@ -1,0 +1,102 @@
+function out = phase4_monte_carlo_test(config)
+
+    minVal  = config.minVal;
+    maxVal  = config.maxVal;
+    
+    config.CL = 0.99;
+    config.sim = struct();
+    sim = config.sim;
+    sim.Nruns = 1000;
+    sim.nArms = 5;
+    sim.T = 200;
+    sim.a = 2;
+    sim.b = 5;
+    sim.parallel = false;
+    rng(sim.seed);
+    
+    Nruns = sim.Nruns;
+    nArms = sim.nArms;
+    T = sim.T;
+    a_null = sim.a;
+    b_null = sim.b;
+    target_rate = 1 - config.CL;
+    
+    fp_counts_phase2 = zeros(Nruns,1);
+    fp_counts_phase3 = zeros(Nruns,1);
+    
+    
+    for r = 1:Nruns
+        robot_arm = phase4_sim_dataset(nArms, T, a_null, b_null, minVal, maxVal);
+        res2 = phase2_mean_sample_test(robot_arm, config);
+        res3 = phase3_sample_goodness_of_fit(robot_arm, config);
+        fp_counts_phase2(r) = sum(res2.h(:));
+        fp_counts_phase3(r) = sum(res3.h(:));
+    end
+    
+    totalFP2 = sum(fp_counts_phase2);
+    totalFP3 = sum(fp_counts_phase3);
+    totalTrials = Nruns * nArms;
+    
+    obs_rate_perarm_phase2 = totalFP2 / totalTrials;
+    obs_rate_perarm_phase3 = totalFP3 / totalTrials;
+    
+    runsWithAny2 = sum(fp_counts_phase2 > 0);
+    runsWithAny3 = sum(fp_counts_phase3 > 0);
+    obs_rate_perrun2 = runsWithAny2 / Nruns;
+    obs_rate_perrun3 = runsWithAny3 / Nruns;
+    
+    p_val_perarm_phase2 = 1 - binocdf(totalFP2-1, totalTrials, target_rate);
+    p_val_perarm_phase3 = 1 - binocdf(totalFP3-1, totalTrials, target_rate);
+    
+    p_val_perrun_phase2 = 1 - binocdf(runsWithAny2-1, Nruns, target_rate);
+    p_val_perrun_phase3 = 1 - binocdf(runsWithAny3-1, Nruns, target_rate);
+    
+    out.summary.Nruns = Nruns;
+    out.summary.nArms = nArms;
+    out.summary.target_rate = target_rate;
+    
+    out.summary.totalFP_phase2 = totalFP2;
+    out.summary.totalFP_phase3 = totalFP3;
+    out.summary.totalTrials = totalTrials;
+    
+    out.summary.obs_rate_perarm_phase2 = obs_rate_perarm_phase2;
+    out.summary.obs_rate_perarm_phase3 = obs_rate_perarm_phase3;
+    
+    out.summary.obs_rate_perrun_phase2 = obs_rate_perrun2;
+    out.summary.obs_rate_perrun_phase3 = obs_rate_perrun3;
+    
+    out.summary.p_val_perarm_phase2 = p_val_perarm_phase2;
+    out.summary.p_val_perarm_phase3 = p_val_perarm_phase3;
+    out.summary.p_val_perrun_phase2 = p_val_perrun_phase2;
+    out.summary.p_val_perrun_phase3 = p_val_perrun_phase3;
+    
+    out.fp_counts_phase2 = fp_counts_phase2;
+    out.fp_counts_phase3 = fp_counts_phase3;
+    
+    fprintf('\n=== Phase IV: Monte-Carlo validation ===\n');
+    fprintf('Simulations: Nruns=%d, nArms=%d, totalTrials=%d\n', Nruns, nArms, totalTrials);
+    fprintf('Target Type I rate (1-CL) = %.5g\n', target_rate);
+    
+    fprintf('\nPhase II (mean Welch t-test):\n');
+    fprintf('  Total false positives = %d, observed per-arm rate = %.5g\n', totalFP2, obs_rate_perarm_phase2);
+    fprintf('  Binomial one-sided p-value (per-arm) = %.4g\n', p_val_perarm_phase2);
+    fprintf('  Runs with any rejection = %d / %d, rate = %.5g, p-value (per-run) = %.4g\n', ...
+        runsWithAny2, Nruns, obs_rate_perrun2, p_val_perrun_phase2);
+    
+    fprintf('\nPhase III (Beta GOF via KS):\n');
+    fprintf('  Total false positives = %d, observed per-arm rate = %.5g\n', totalFP3, obs_rate_perarm_phase3);
+    fprintf('  Binomial one-sided p-value (per-arm) = %.4g\n', p_val_perarm_phase3);
+    fprintf('  Runs with any rejection = %d / %d, rate = %.5g, p-value (per-run) = %.4g\n', ...
+        runsWithAny3, Nruns, obs_rate_perrun3, p_val_perrun_phase3);
+    
+    end
+    
+    function robot_arm = phase4_sim_dataset(nArms, T, a_null, b_null, minVal, maxVal)
+    
+    robot_arm = repmat(struct('sampleset',zeros(T,1)),1,nArms);
+    for ii = 1:nArms
+        x = betarnd(a_null, b_null, T, 1);
+        x = x * (maxVal - minVal) + minVal;
+        robot_arm(ii).sampleset = x;
+    end
+end

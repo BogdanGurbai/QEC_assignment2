@@ -57,16 +57,18 @@ function results = phase3_sample_goodness_of_fit(robot_arm, config)
     
     idxBad = results.h;
     
-    for k = 1:N
-        status = "OK";
-        if idxBad(k)
-            status = "MAINTENANCE NEEDED";
+    if config.print
+        for k = 1:N
+            status = "OK";
+            if idxBad(k)
+                status = "MAINTENANCE NEEDED";
+            end
+        
+            fprintf('Arm %3d: nS=%3d nE=%3d a=%.3f b=%.3f | p=%.4g h=%d --> %s\n', ...
+                k, results.nStart(k), results.nEnd(k), ...
+                results.alpha_hat(k), results.beta_hat(k), ...
+                results.p(k), results.h(k), status);
         end
-    
-        fprintf('Arm %3d: nS=%3d nE=%3d a=%.3f b=%.3f | p=%.4g h=%d --> %s\n', ...
-            k, results.nStart(k), results.nEnd(k), ...
-            results.alpha_hat(k), results.beta_hat(k), ...
-            results.p(k), results.h(k), status);
     end
     
     badArms = find(idxBad);

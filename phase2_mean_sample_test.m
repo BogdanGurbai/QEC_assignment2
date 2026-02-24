@@ -39,16 +39,18 @@ function results = phase2_mean_sample_test(robot_arm, config)
     
     idxBad = results.h;
     
-    for k = 1:N
-        status = "OK";
-        if idxBad(k)
-            status = "NOT UP-TO-SPEC";
+    if config.print
+        for k = 1:N
+            status = "OK";
+            if idxBad(k)
+                status = "NOT UP-TO-SPEC";
+            end
+        
+            fprintf('Arm %3d: nS=%3d nE=%3d meanS=%.4g meanE=%.4g | p=%.4g h=%d --> %s\n', ...
+                k, results.nStart(k), results.nEnd(k), ...
+                results.meanStart(k), results.meanEnd(k), ...
+                results.p(k), results.h(k), status);
         end
-    
-        fprintf('Arm %3d: nS=%3d nE=%3d meanS=%.4g meanE=%.4g | p=%.4g h=%d --> %s\n', ...
-            k, results.nStart(k), results.nEnd(k), ...
-            results.meanStart(k), results.meanEnd(k), ...
-            results.p(k), results.h(k), status);
     end
     
     badArms = find(idxBad);
